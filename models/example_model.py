@@ -17,14 +17,15 @@ class ExampleModel(BaseModel):
         # network architecture
         d1 = tf.layers.dense(self.x, 512, activation=tf.nn.relu, name="dense1")
         d2 = tf.layers.dense(d1, 10, name="dense2")
+        d3 = tf.layers.dense(d2, 10, name="dense3")
 
         with tf.name_scope("loss"):
-            self.cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.y, logits=d2))
+            self.cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.y, logits=d3))
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
                 self.train_step = tf.train.AdamOptimizer(self.config.learning_rate).minimize(self.cross_entropy,
                                                                                          global_step=self.global_step_tensor)
-            correct_prediction = tf.equal(tf.argmax(d2, 1), tf.argmax(self.y, 1))
+            correct_prediction = tf.equal(tf.argmax(d3, 1), tf.argmax(self.y, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 

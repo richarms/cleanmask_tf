@@ -15,17 +15,24 @@ class ExampleModel(BaseModel):
         self.y = tf.placeholder(tf.float32, shape=[None, 10])
 
         # network architecture
-        d1 = tf.layers.dense(self.x, 512, activation=tf.nn.relu, name="dense1")
-        d2 = tf.layers.dense(d1, 10, name="dense2")
-        d3 = tf.layers.dense(d2, 10, name="dense3")
+        xp = tf.layers.conv2d(self.x, filters=16, kernel_size=5, strides=(1, 1), padding='same', activation=tf.nn.relu)
+        x = tf.layers.conv2d(xp, filters=16, kernel_size=5, strides=(1, 1), padding='same', activation=tf.nn.relu)
+        x = tf.layers.conv2d(x, filters=16, kernel_size=5, strides=(1, 1), padding='same', activation=tf.nn.relu)
+        x = x + xp
+
+        x = tf.layers.batch_normalization(x)
+        x = tf.layers.conv2d(x, filters=16, kernel_size=5, strides=(1, 1), padding='same', activation=tf.nn.relu)
+        x = tf.layers.dropout(x, self.drop_out)
+
+        x_out = tf.layers.conv2d(x, filters=1, kernel_size=5, strides=(1, 1), padding='same', activation=tf.nn.relu)
 
         with tf.name_scope("loss"):
-            self.cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.y, logits=d3))
+            self.cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=self.y, logits=x_out))
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):
                 self.train_step = tf.train.AdamOptimizer(self.config.learning_rate).minimize(self.cross_entropy,
                                                                                          global_step=self.global_step_tensor)
-            correct_prediction = tf.equal(tf.argmax(d3, 1), tf.argmax(self.y, 1))
+            correct_prediction = tf.equal(tf.argmax(x_out, 1), tf.argmax(self.y, 1))
             self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 
